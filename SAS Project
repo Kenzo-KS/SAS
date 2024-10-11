@@ -1,0 +1,98 @@
+**********************************************************************
+Kenzo Kanashiro
+Final Project 
+6/21/2024
+************************************************************************;
+*** Part 1- Find dataset and describe your motivation
+A) The dataset is located at https://catalog.data.gov/dataset/nchs-leading-causes-of-death-united-states
+B) I chose this dataset to research the leading causes of death in the United States and to understand which
+age groups are more likely to fall under each cause. 
+*** END OF PART 1 ********;
+*** Part 2- Import the dataset into SAS on Demand;
+LIBNAME NCSU '/home/u63887514/sasuser.v94/NCSU'; * Calling the library;
+FILENAME REFFILE '/home/u63887514/sasuser.v94/NCHS_-_Leading_Causes_of_Death__United_States.csv'; * Giving SAS a file path;
+** Importing the data using ImportWizard;
+PROC IMPORT
+ DATAFILE=REFFILE
+ DBMS=CSV
+ OUT=NCSU.FinalProject;
+ GETNAMES=YES;
+RUN;
+** Understanding the variables;
+PROC CONTENTS DATA=NCSU.FinalProject;
+RUN;
+** Understanding the table;
+PROC PRINT DATA=NCSU.FinalProject (OBS=500);
+RUN;
+** Since the dataset contains a summation of all causes, I will delete these records to facilitate the analysis,
+ as they may contain outliers and I am not interested in analyzing all causes of death;
+DATA NCSU.FinalProject;
+ SET NCSU.FinalProject;
+ WHERE '113 Cause Name'n NE 'All Causes';
+RUN;
+** Understanding the table;
+PROC PRINT DATA=NCSU.FinalProject (OBS=500);
+RUN;
+** I m also removing "United States" records and the summation of all causes to facilitate the testing as I want to know deat
+DATA NCSU.FinalProject;
+ SET NCSU.FinalProject;
+ WHERE '113 Cause Name'n NE 'All Causes' AND State NE 'United States';
+RUN;
+** Understanding the table;
+PROC PRINT DATA=NCSU.FinalProject (OBS=500);
+RUN;
+*** END OF PART 2 ********;
+*** Part 3- Create two statistical questions that you can answer with hypothesis testing or prediction methods;
+* A) Is there a significant linear relationship between the age-adjusted death rate and age? (Simple Linear Regression)
+ * Null Hypothesis (H0): There is no linear relationship between the age-adjusted death rate and the number of deaths
+ * Alternative Hypothesis (H1): There is a linear relationship between the age-adjusted death rate and the number of deaths.
+ 
+* B) Do unintentional injuries have different average death rates according to state? (One-Way ANOVA) 
+ * Null Hypothesis (H0): There are no differences in unintentional injury death rates across different states.
+ * Alternative Hypothesis (H1):At least one state's unintentional injury death rate is different compared to others.
+*** END OF PART 3 ********;
+*** Part 4- Answer these questions using SAS code;
+** A) Simple Linear Regression for age-adjusted death rate and age;
+LIBNAME NCSU '/home/u63887514/sasuser.v94/NCSU'; * Calling the library;
+6/21/24, 8:14 PM Code: FinalSaSProject.sas
+about:blank 1/2
+PROC GLM Data= NCSU.FinalProject PLOTS(MAXPOINTS=10000)=ALL;
+ MODEL 'Age-adjusted Death Rate'n =deaths/CLI;
+ RUN;
+ QUIT;
+ 
+** Interpretation
+The results demonstrate a linear relationship between the age-adjusted death rate and the number of deaths, suggesting that a
+the number of deaths increases, so does the age-adjusted death rate. However, we cannot conclude that age is the sole factor 
+influencing this outcome. 
+** Key Findings
+* The model's F-value (4945.08) and p-value (<.0001) indicate statistical significance, demonstrating that the number of deat
+ of the age-adjusted death rate.
+* The parameter estimate for deaths (0.00545788) suggests that for every unit increase in deaths, 
+ the age-adjusted death rate increases by 0.00545788 if the other variables remain the same.
+* The t-value (70.32) and p-value (<.0001) for the deaths variable confirm the statistical 
+ significance of this coefficient, further supporting the linear relationship between deaths and the age-adjusted death rate
+** Conclusion:
+We reject the null hypothesis (H0) and accept the alternative hypothesis (H1). There is a statistically significant linear re
+** B) One-Way ANOVA for different causes of death and death rates according to state;
+PROC GLM DATA=NCSU.FinalProject;
+ CLASS State;
+ MODEL 'Age-adjusted Death Rate'n = State;
+ WHERE '113 Cause Name'n = 'Accidents (unintentional injuries) (V01-X59,Y85-Y86)';
+ TITLE 'One-Way ANOVA for Unintentional Injury Death Rates by State';
+ MEANS State / TUKEY;
+RUN;
+*** Interpretation
+The results indicate significant differences in age-adjusted unintentional injury death rates across different states in the d
+This suggests that the state in which a person resides plays a role in their risk of death due to unintentional injuries.
+*Key Findings:
+*Significant State Differences: The F-value (43.46) and associated p-value (<.0001) demonstrate a statistically significant d
+to accidents alone.
+*State as a Predictor: The significant p-value for the 'State' variable confirms that the state of residence is a significant 
+*Effect Size: The R-squared value (0.703019) indicates that approximately 70.3% of the variation in age-adjusted unintentiona
+This indicates that a state-level factors play in influencing these rates.
+* The grapahs also show a lot of different concentrations of accidents per state
+Conclusion:
+We reject the null hypothesis (H0) of no difference in age-adjusted unintentional injury death rates among states and accept t
+The state of residence is a key factor in understanding variations in unintentional injury death rates.
+*** END OF PART 4 ********;
