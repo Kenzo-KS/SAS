@@ -1,0 +1,87 @@
+***********************************************************************
+Kenzo Kanashiro
+Project 1
+6/7/2024
+*************************************************************************;
+***Part 1- Find dataset and describe your motivation
+A) The dataset is available at https://catalog.data.gov/dataset/nchs-leading-causes-of-death-united-states
+B) I chose this dataset to research the leading causes of death in the United States and the age groups most susceptible 
+to each cause.
+***END OF PART 1********;
+***Part 2- Import the dataset into SAS on Demand;
+LIBNAME NCSU '/home/u63887514/sasuser.v94/NCSU'; * Calling the library;
+FILENAME REFFILE '/home/u63887514/sasuser.v94/NCHS_-_Leading_Causes_of_Death__United_States.csv'; *giving SAS a file path;
+**Importing the data using Wizard;
+PROC IMPORT DATAFILE=REFFILE
+DBMS=CSV
+OUT=NCSU.Project;
+GETNAMES=YES;
+RUN;
+** Understanding the variables;
+PROC CONTENTS DATA=NCSU.Project ;
+RUN;
+**Understanding the table;
+PROC PRINT DATA=NCSU.Project (OBS=100);
+RUN;
+** BONUS POINT A- Since the data contains a summatory of all death causes I will removed it sinces its not on my interested an
+my analys when calcualting mean and medians etc;
+LIBNAME NCSU '/home/u63887514/sasuser.v94/NCSU'; * Calling the library;
+DATA NCSU.Project;
+ SET NCSU.Project;
+ WHERE '113 Cause Name'n NE 'All Causes';
+RUN;
+***END OF PART 2********;
+***Part 3- Do the following task
+A) Creating a new varible 'age category' BONUS POINT B- I m adding per 100k to make it more descriptive;
+DATA NCSU.Project;
+SET NCSU.Project;
+LENGTH Age_Category_Per_100k $15;
+IF 'Age-adjusted Death Rate'n < 50 THEN Age_Category_Per_100k = "Young";
+ELSE IF 'Age-adjusted Death Rate'n >= 51 AND 'Age-adjusted Death Rate'n < 60 THEN Age_Category_Per_100k = "Middle-aged";
+ELSE Age_Category_Per_100k = "Elderly";
+RUN;
+*B) Giving labels to variables;
+DATA NCSU.Project;
+SET NCSU.Project;
+LABEL '113 Cause Name'n = 'Name of Cause and ICD Code'
+ Cause Name = 'Death Category';
+RUN;
+** Reviewing labels;
+PROC PRINT DATA = NCSU.project1 (OBS=100) LABEL;
+6/8/24, 10:27 AM Code: InClassProject.sas
+about:blank 1/2
+** C) Sorting the labels in work dictionary;
+PROC SORT DATA = NCSU.project
+OUT= WORK.Project;
+BY DESCENDING YEAR;
+RUN;
+** D) Create a contengcy table - BONUS POINTS subsettinng the data;
+PROC FREQ DATA=NCSU.Project;
+TABLES Age_Category_Per_100k * '113 Cause Name'n / CHISQ;
+WEIGHT 'Age-adjusted Death Rate'n;
+WHERE Age_Category_Per_100k ne 'Young';
+RUN;
+** In this contegency table we can look at the age categories and their causes of death 
+and the percentages to understand what are the most common death by age of Elders annd Middle Aged;
+** E) Get the mean and standard deviation for at least one of your numeric variables across different values of 
+one of your character variables and comment on the results - BONUS POINTS subsettinng the data;
+PROC MEANS DATA=NCSU.Project MEAN STDDEV;
+ CLASS Age_Category_Per_100k;
+ VAR 'Age-adjusted Death Rate'n;
+ WHERE Age_Category_Per_100k ne "Young";
+RUN;
+**The data reveal striking differences in mortality rates among the groups. 
+Elderly individuals experience the highest average death rate (169.5 per 100,000), while middle-aged (55.0 per 100,000).
+The higher standard deviation in the elderly group suggests greater variability in death rates within that age category 
+compared to the middle-aged and young groups;
+** F) Create at least one (1) appropriate plot and explain what information it provides (10pt);
+PROC SGPLOT DATA=NCSU.Project;
+ TITLE 'Distribution of Death Rates and Age Category';
+ VBOX 'Age-adjusted Death Rate'n / CATEGORY=Age_Category_Per_100k;
+RUN;
+** The boxplot illustrates a clear trend of increasing age-adjusted death rates from young to middle-aged to elderly groups. 
+The elderly exhibit the highest median death rate and the greatest variability, with several outliers indicating unusually
+ high mortality wich makes sense as the older you get the higher are your chances of contracting a disease
+In contrast, the middle-aged and young groups show lower median death rates and less variability. 
+***END OF PART 3********;
+*** END OF THE PROJECT *************************************************************************;
